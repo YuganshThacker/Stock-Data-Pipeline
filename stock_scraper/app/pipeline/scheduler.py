@@ -1,6 +1,6 @@
 import asyncio
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 from stock_scraper.app.pipeline.queue import CompanyQueue
 from stock_scraper.app.pipeline.worker import run_scrape_batch
 from stock_scraper.app.config import settings
@@ -106,6 +106,25 @@ async def run_unscraped(batch_size: int = 50):
 
     logger.info(f"Scraping {queue.size()} unscraped companies")
     result = await _run_queued_scrape(queue, "full", batch_size)
+    return result
+
+
+async def run_symbols_scrape(symbols: List[str], batch_size: int = 50, scrape_mode: str = "full"):
+    """
+    Targeted scrape for a provided set of Screener symbols.
+    """
+    queue = CompanyQueue()
+    await queue.load_by_symbols(symbols)
+
+    if queue.empty():
+        logger.info("No companies to scrape for provided symbols")
+        return None
+
+    logger.info(f"Starting targeted scrape of {queue.size()} companies ({scrape_mode})")
+    result = await _run_queued_scrape(queue, scrape_mode, batch_size)
+    logger.info(
+        f"Targeted scrape complete: {result['success']}/{result['total']} succeeded, {result['failure']} failed"
+    )
     return result
 
 
