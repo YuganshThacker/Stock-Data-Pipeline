@@ -1,9 +1,5 @@
 import asyncio
 import argparse
-import os
-import sys
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from stock_scraper.app.pipeline.scheduler import (
     run_full_scrape, run_retry_failed, run_unscraped,
@@ -11,7 +7,7 @@ from stock_scraper.app.pipeline.scheduler import (
 )
 from stock_scraper.app.db.database import close_pool, get_pool
 from stock_scraper.app.utils.logger import get_logger
-from stock_scraper.app.config import settings
+from stock_scraper.app.config import settings  # noqa: F401
 
 logger = get_logger("run_scraper")
 

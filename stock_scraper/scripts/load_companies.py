@@ -1,12 +1,8 @@
 import asyncio
 import csv
 import os
-import sys
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from stock_scraper.app.db.database import get_pool, close_pool
-from stock_scraper.app.scraper.screener_scraper import search_company, _normalize_company_name
 from stock_scraper.app.utils.logger import get_logger
 
 logger = get_logger("load_companies")
@@ -26,7 +22,7 @@ def derive_screener_slug(name: str) -> str:
     slug = slug.replace("(", "").replace(")", "").replace("/", "-")
     parts = slug.split()
     slug = "-".join(p for p in parts if p)
-    slug = slug.replace("--", "-").strip("-")
+    slug = slug.replace("--", "-").strip("-").lower()
     return slug
 
 

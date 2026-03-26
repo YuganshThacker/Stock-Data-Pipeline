@@ -1,14 +1,8 @@
-import asyncio
-import os
-import sys
 from contextlib import asynccontextmanager
 from typing import Optional
 
 from fastapi import FastAPI, Query, HTTPException, Path, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 
 from stock_scraper.app.db.database import get_pool, close_pool
 from stock_scraper.app.utils.logger import get_logger
