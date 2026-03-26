@@ -51,6 +51,15 @@ async def process_company(company: Dict[str, Any], mode: str = "full") -> bool:
 
         cleaned = clean_all(parsed)
 
+        if final_url and "symbol" not in cleaned.get("company_info", {}):
+            url_parts = final_url.rstrip("/").split("/")
+            for i, part in enumerate(url_parts):
+                if part == "company" and i + 1 < len(url_parts):
+                    slug = url_parts[i + 1]
+                    if slug and slug != "consolidated":
+                        cleaned.setdefault("company_info", {})["symbol"] = slug
+                    break
+
         async with pool.acquire() as conn:
             async with conn.transaction():
                 await upsert_company_data(conn, company_name, final_url, cleaned)

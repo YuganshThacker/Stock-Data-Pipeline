@@ -25,38 +25,52 @@ def _parse_company_info(soup: BeautifulSoup) -> Dict[str, Any]:
     if name_tag:
         info["name"] = name_tag.get_text(strip=True)
 
-    company_info_div = soup.find("div", class_="company-info")
-    if company_info_div:
-        links = company_info_div.find_all("a")
-        for link in links:
+    for links_div in soup.find_all("div", class_="company-links"):
+        for link in links_div.find_all("a"):
             href = link.get("href", "")
-            text = link.get_text(strip=True)
-            if "/sector/" in href or "/industry/" in href:
-                if "sector" not in info:
-                    info["sector"] = text
+            if "nseindia.com" in href:
+                if "symbol=" in href:
+                    nse_symbol = href.split("symbol=")[-1].split("&")[0].strip()
+                    if nse_symbol:
+                        info["symbol"] = nse_symbol
+                        info["nse_code"] = nse_symbol
                 else:
-                    info["industry"] = text
+                    spans = link.find_all("span")
+                    for span in spans:
+                        txt = span.get_text(strip=True)
+                        if txt and txt not in ("NSE", "NSE:"):
+                            cleaned = txt.replace("NSE:", "").strip()
+                            if cleaned:
+                                info["symbol"] = cleaned
+                                info["nse_code"] = cleaned
+            elif "bseindia.com" in href:
+                spans = link.find_all("span")
+                for span in spans:
+                    txt = span.get_text(strip=True)
+                    if txt and txt not in ("BSE", "BSE:"):
+                        cleaned = txt.replace("BSE:", "").strip()
+                        if cleaned:
+                            info["bse_code"] = cleaned
+            elif "/sector/" in href:
+                text = link.get_text(strip=True)
+                info["sector"] = text
+            elif "/industry/" in href:
+                text = link.get_text(strip=True)
+                info["industry"] = text
 
-    bse_nse = soup.find("div", class_="company-links")
-    if bse_nse:
-        text = bse_nse.get_text(strip=True)
-        if "BSE:" in text:
-            parts = text.split("BSE:")
-            if len(parts) > 1:
-                bse_code = parts[1].split()[0] if parts[1].split() else ""
-                info["bse_code"] = bse_code.strip()
-        if "NSE:" in text:
-            parts = text.split("NSE:")
-            if len(parts) > 1:
-                nse_code = parts[1].split()[0] if parts[1].split() else ""
-                info["nse_code"] = nse_code.strip()
-
-    symbol_meta = soup.find("meta", attrs={"name": "twitter:title"})
-    if symbol_meta:
-        content = symbol_meta.get("content", "")
-        if content:
-            symbol_part = content.split("-")[0].strip() if "-" in content else content.strip()
-            info["symbol"] = symbol_part
+    if "symbol" not in info:
+        canonical = soup.find("link", attrs={"rel": "canonical"})
+        if canonical:
+            canon_href = canonical.get("href", "")
+            parts = canon_href.rstrip("/").split("/")
+            if len(parts) >= 2 and parts[-2] == "company":
+                slug = parts[-1]
+                if slug and not slug.isdigit():
+                    info["symbol"] = slug
+            elif len(parts) >= 3 and parts[-3] == "company":
+                slug = parts[-2]
+                if slug and not slug.isdigit():
+                    info["symbol"] = slug
 
     return info
 
