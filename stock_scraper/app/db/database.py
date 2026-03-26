@@ -173,22 +173,24 @@ async def upsert_insights(conn, company_id: int, data: Dict[str, Any]):
 async def upsert_news(conn, company_id: int, news_items: List[Dict[str, Any]]):
     if not news_items:
         return
-    for item in news_items:
-        await conn.execute(
-            """
-            INSERT INTO news (company_id, title, news_date, source, link)
-            VALUES ($1, $2, $3, $4, $5)
-            ON CONFLICT (company_id, title) DO UPDATE SET
-                news_date = COALESCE(EXCLUDED.news_date, news.news_date),
-                source = COALESCE(EXCLUDED.source, news.source),
-                link = COALESCE(EXCLUDED.link, news.link)
-            """,
-            company_id,
-            item.get("title", ""),
-            item.get("date"),
-            item.get("source"),
-            item.get("link"),
-        )
+    records = [
+        (company_id, item.get("title", ""), item.get("date"), item.get("source"), item.get("link"))
+        for item in news_items
+        if item.get("title")
+    ]
+    if not records:
+        return
+    await conn.executemany(
+        """
+        INSERT INTO news (company_id, title, news_date, source, link)
+        VALUES ($1, $2, $3, $4, $5)
+        ON CONFLICT (company_id, title) DO UPDATE SET
+            news_date = COALESCE(EXCLUDED.news_date, news.news_date),
+            source = COALESCE(EXCLUDED.source, news.source),
+            link = COALESCE(EXCLUDED.link, news.link)
+        """,
+        records,
+    )
 
 
 async def insert_scrape_log(conn, company_id: int, status: str, error_message: Optional[str] = None, duration_ms: Optional[int] = None):

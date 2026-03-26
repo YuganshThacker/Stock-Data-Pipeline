@@ -4,7 +4,7 @@ import sys
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI, Query, HTTPException, Path
+from fastapi import FastAPI, Query, HTTPException, Path, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -30,7 +30,6 @@ app = FastAPI(
     description="API for querying Indian stock market data scraped from Screener.in",
     version="1.0.0",
     lifespan=lifespan,
-    root_path="/stock-api",
 )
 
 app.add_middleware(
@@ -41,13 +40,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+router = APIRouter(prefix="/stock-api")
 
-@app.get("/health")
+
+@router.get("/health")
 async def health_check():
     return {"status": "ok", "service": "stock-scraper-api"}
 
 
-@app.get("/companies")
+@router.get("/companies")
 async def list_companies(
     page: int = Query(1, ge=1),
     per_page: int = Query(50, ge=1, le=500),
@@ -102,12 +103,12 @@ async def list_companies(
     }
 
 
-@app.get("/companies/by-id/{company_id}")
+@router.get("/companies/by-id/{company_id}")
 async def get_company_by_id(company_id: int = Path(..., ge=1)):
     return await _get_company_detail("id", company_id)
 
 
-@app.get("/companies/{symbol}")
+@router.get("/companies/{symbol}")
 async def get_company_detail(symbol: str = Path(..., min_length=1)):
     return await _get_company_detail("symbol", symbol)
 
@@ -157,7 +158,7 @@ async def _get_company_detail(lookup_field: str, lookup_value):
     }
 
 
-@app.get("/companies/{symbol}/news")
+@router.get("/companies/{symbol}/news")
 async def get_company_news(
     symbol: str = Path(..., min_length=1),
     page: int = Query(1, ge=1),
@@ -196,7 +197,7 @@ async def get_company_news(
     }
 
 
-@app.get("/scrape-status")
+@router.get("/scrape-status")
 async def get_scrape_status():
     pool = await get_pool()
     async with pool.acquire() as conn:
@@ -246,7 +247,7 @@ async def get_scrape_status():
     }
 
 
-@app.get("/sectors")
+@router.get("/sectors")
 async def list_sectors():
     pool = await get_pool()
     async with pool.acquire() as conn:
@@ -260,6 +261,9 @@ async def list_sectors():
             """
         )
     return {"sectors": [dict(r) for r in rows]}
+
+
+app.include_router(router)
 
 
 def run_api_server():

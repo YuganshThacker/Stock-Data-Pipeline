@@ -41,11 +41,13 @@ async def process_company(company: Dict[str, Any]) -> bool:
 
         parsed = parse_company_page(html)
 
+        financials = parsed.get("financials", {})
+        insights = parsed.get("insights", {})
         has_data = any([
             parsed.get("fundamentals"),
-            parsed.get("profit_loss"),
-            parsed.get("balance_sheet"),
-            parsed.get("about"),
+            financials.get("profit_loss"),
+            financials.get("balance_sheet"),
+            insights.get("about"),
         ])
         if not has_data:
             duration_ms = int((time.monotonic() - start_time) * 1000)
