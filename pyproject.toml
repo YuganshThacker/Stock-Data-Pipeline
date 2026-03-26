@@ -1,0 +1,18 @@
+[project]
+name = "repl-nix-workspace"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.12"
+dependencies = [
+    "apscheduler>=3.11.2",
+    "asyncpg>=0.31.0",
+    "beautifulsoup4>=4.14.3",
+    "fastapi>=0.135.2",
+    "httpx>=0.28.1",
+    "lxml>=6.0.2",
+    "pydantic>=2.12.5",
+    "pydantic-settings>=2.13.1",
+    "python-dotenv>=1.2.2",
+    "python-json-logger>=4.0.0",
+    "uvicorn>=0.42.0",
+]

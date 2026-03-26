@@ -94,3 +94,85 @@ Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHea
 ### `scripts` (`@workspace/scripts`)
 
 Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.
+
+## Stock Scraper (Python)
+
+### Overview
+
+Indian stock market data pipeline that scrapes company data from Screener.in for 4,492 NSE & BSE companies, cleans/normalizes it, and stores it in PostgreSQL. Includes a FastAPI query API and scheduler for daily/weekly/monthly updates.
+
+### Structure
+
+```text
+stock_scraper/
+├── app/
+│   ├── api/main.py          # FastAPI query API (port 8001, root_path=/stock-api)
+│   ├── config.py             # Settings (pydantic-settings, reads .env + env vars)
+│   ├── db/database.py        # asyncpg connection pool, UPSERT operations for all 7 tables
+│   ├── pipeline/
+│   │   ├── worker.py          # Per-company scrape logic (resolve URL → fetch → parse → clean → store)
+│   │   ├── scheduler.py       # Batch orchestration (full/retry/unscraped modes)
+│   │   └── queue.py           # Company queue from DB with offset/limit
+│   ├── scraper/
+│   │   ├── screener_scraper.py  # HTTP client with rate limiting, search API URL resolver
+│   │   ├── parser.py            # BeautifulSoup HTML parser for Screener.in pages
+│   │   └── cleaner.py           # Data normalization (numbers, percentages, dates)
+│   └── utils/
+│       ├── logger.py           # JSON structured logging
+│       └── retry.py            # Exponential backoff decorator
+├── scripts/
+│   ├── run_scraper.py          # CLI entry point (--mode full/retry/unscraped --limit N --offset N)
+│   └── load_companies.py       # CSV bulk loader for companies table
+└── __main__.py                 # python -m stock_scraper entry point
+```
+
+### Database Tables (PostgreSQL)
+
+- `companies` — 4,492 NSE/BSE companies (name, symbol, sector, industry, market_cap, screener_url)
+- `fundamentals` — PE, PB, ROCE, ROE, market cap, dividend yield, etc.
+- `financials` — P&L, balance sheet, cash flow, shareholding (JSONB)
+- `ratios` — Historical ratio data (JSONB)
+- `insights` — Pros, cons, company about text
+- `news` — Company news articles
+- `scrape_logs` — Scrape attempt tracking (status, duration, errors)
+
+### Running the Scraper
+
+```bash
+# Full scrape (all companies)
+python3 stock_scraper/scripts/run_scraper.py --mode full --limit 100
+
+# Retry failed companies
+python3 stock_scraper/scripts/run_scraper.py --mode retry
+
+# Scrape only unscraped companies
+python3 stock_scraper/scripts/run_scraper.py --mode unscraped
+
+# Module entry point
+python3 -m stock_scraper --mode full --limit 50
+```
+
+### Running the API
+
+```bash
+python3 -m stock_scraper.app.api.main
+# API available at http://localhost:8001/stock-api/
+```
+
+### API Endpoints
+
+- `GET /stock-api/health` — Health check
+- `GET /stock-api/companies` — List companies (search, sector filter, pagination)
+- `GET /stock-api/companies/{id}` — Full company detail with fundamentals, financials, ratios, insights, news
+- `GET /stock-api/companies/{id}/news` — Company news (paginated)
+- `GET /stock-api/scrape-status` — Scraping progress summary
+- `GET /stock-api/sectors` — List sectors with company counts
+
+### Key Design Decisions
+
+- URL resolution uses Screener.in search API (`/api/company/search/?q=`) to map company names → correct URL slugs (ticker symbols like TCS, INFY, RELIANCE)
+- Rate limiting: 3 req/sec max with semaphore-based concurrency (5 concurrent), 8 rotating User-Agent strings
+- All DB writes use UPSERT (ON CONFLICT DO UPDATE) for idempotent re-scraping
+- asyncpg connection pool: min=5, max=20
+- Exponential backoff retry with configurable max_retries (default 3)
+- Resolved URLs are persisted back to companies.screener_url so subsequent scrapes skip the search step
