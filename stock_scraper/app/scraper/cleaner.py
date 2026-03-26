@@ -109,12 +109,44 @@ def clean_company_info(raw: Dict[str, Any]) -> Dict[str, Any]:
     return cleaned
 
 
+def _normalize_table_data(table: Dict[str, Any]) -> Dict[str, Any]:
+    normalized = {}
+    for row_name, values in table.items():
+        clean_key = to_snake_case(row_name.strip())
+        if isinstance(values, dict):
+            normalized_values = {}
+            for period, val in values.items():
+                period_key = period.strip()
+                if isinstance(val, str):
+                    numeric = clean_numeric(val)
+                    if numeric is not None:
+                        normalized_values[period_key] = numeric
+                    else:
+                        normalized_values[period_key] = val.strip() if val.strip() else None
+                else:
+                    normalized_values[period_key] = val
+            normalized[clean_key] = normalized_values
+        else:
+            normalized[clean_key] = values
+    return normalized
+
+
 def clean_financials(raw: Dict[str, Any]) -> Dict[str, Any]:
-    return raw
+    cleaned = {}
+    for section_key in ("profit_loss", "balance_sheet", "cash_flow", "quarterly"):
+        section_data = raw.get(section_key, {})
+        if section_data and isinstance(section_data, dict):
+            cleaned[section_key] = _normalize_table_data(section_data)
+        else:
+            cleaned[section_key] = {}
+    return cleaned
 
 
 def clean_ratios(raw: Dict[str, Any]) -> Dict[str, Any]:
-    return raw
+    ratios_data = raw.get("ratios_data", {})
+    if ratios_data and isinstance(ratios_data, dict):
+        return {"ratios_data": _normalize_table_data(ratios_data)}
+    return {"ratios_data": {}}
 
 
 def clean_insights(raw: Dict[str, Any]) -> Dict[str, Any]:

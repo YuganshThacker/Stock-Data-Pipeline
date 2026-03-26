@@ -13,11 +13,24 @@ from stock_scraper.app.utils.logger import get_logger
 
 logger = get_logger("worker")
 
+DAILY_SECTIONS = {"company_info", "fundamentals", "ratios"}
+WEEKLY_SECTIONS = {"company_info", "fundamentals", "financials", "ratios", "shareholding"}
+FULL_SECTIONS = {"company_info", "fundamentals", "financials", "ratios", "insights", "news", "shareholding"}
 
-async def process_company(company: Dict[str, Any]) -> bool:
+
+def _sections_for_mode(mode: str) -> set:
+    if mode == "daily_prices":
+        return DAILY_SECTIONS
+    elif mode == "weekly_financials":
+        return WEEKLY_SECTIONS
+    return FULL_SECTIONS
+
+
+async def process_company(company: Dict[str, Any], mode: str = "full") -> bool:
     company_id = company["id"]
     company_name = company["name"]
     current_url = company.get("screener_url", "")
+    sections = _sections_for_mode(mode)
 
     start_time = time.monotonic()
     pool = await get_pool()
@@ -41,13 +54,13 @@ async def process_company(company: Dict[str, Any]) -> bool:
 
         parsed = parse_company_page(html)
 
-        financials = parsed.get("financials", {})
-        insights = parsed.get("insights", {})
+        financials_parsed = parsed.get("financials", {})
+        insights_parsed = parsed.get("insights", {})
         has_data = any([
             parsed.get("fundamentals"),
-            financials.get("profit_loss"),
-            financials.get("balance_sheet"),
-            insights.get("about"),
+            financials_parsed.get("profit_loss"),
+            financials_parsed.get("balance_sheet"),
+            insights_parsed.get("about"),
         ])
         if not has_data:
             duration_ms = int((time.monotonic() - start_time) * 1000)
@@ -60,36 +73,43 @@ async def process_company(company: Dict[str, Any]) -> bool:
 
         async with pool.acquire() as conn:
             async with conn.transaction():
-                company_info = cleaned.get("company_info", {})
-                company_info.update({
-                    "market_cap_str": cleaned.get("fundamentals", {}).get("market_cap_str"),
-                    "current_price_str": cleaned.get("fundamentals", {}).get("current_price_str"),
-                })
-                await upsert_company_details(conn, company_id, company_info)
+                if "company_info" in sections:
+                    company_info = cleaned.get("company_info", {})
+                    company_info.update({
+                        "market_cap_str": cleaned.get("fundamentals", {}).get("market_cap_str"),
+                        "current_price_str": cleaned.get("fundamentals", {}).get("current_price_str"),
+                    })
+                    await upsert_company_details(conn, company_id, company_info)
 
-                fundamentals = cleaned.get("fundamentals", {})
-                if fundamentals:
-                    await upsert_fundamentals(conn, company_id, fundamentals)
+                if "fundamentals" in sections:
+                    fundamentals = cleaned.get("fundamentals", {})
+                    if fundamentals:
+                        await upsert_fundamentals(conn, company_id, fundamentals)
 
-                financials = cleaned.get("financials", {})
-                financials["shareholding"] = cleaned.get("shareholding", {})
-                await upsert_financials(conn, company_id, financials)
+                if "financials" in sections or "shareholding" in sections:
+                    financials = cleaned.get("financials", {})
+                    if "shareholding" in sections:
+                        financials["shareholding"] = cleaned.get("shareholding", {})
+                    await upsert_financials(conn, company_id, financials)
 
-                ratios = cleaned.get("ratios", {})
-                await upsert_ratios(conn, company_id, ratios)
+                if "ratios" in sections:
+                    ratios = cleaned.get("ratios", {})
+                    await upsert_ratios(conn, company_id, ratios)
 
-                insights = cleaned.get("insights", {})
-                await upsert_insights(conn, company_id, insights)
+                if "insights" in sections:
+                    insights = cleaned.get("insights", {})
+                    await upsert_insights(conn, company_id, insights)
 
-                news_items = cleaned.get("news", [])
-                await upsert_news(conn, company_id, news_items)
+                if "news" in sections:
+                    news_items = cleaned.get("news", [])
+                    await upsert_news(conn, company_id, news_items)
 
                 duration_ms = int((time.monotonic() - start_time) * 1000)
                 await insert_scrape_log(conn, company_id, "success", None, duration_ms)
 
         logger.info(
-            f"Successfully scraped {company_name}",
-            extra={"company_id": company_id, "company_name": company_name, "duration_ms": duration_ms, "status": "success"},
+            f"Successfully scraped {company_name} (mode={mode})",
+            extra={"company_id": company_id, "company_name": company_name, "duration_ms": duration_ms, "status": "success", "mode": mode},
         )
         return True
 
@@ -117,7 +137,7 @@ async def run_scrape_batch(companies: list, mode: str = "full") -> Dict[str, int
 
     tasks = []
     for company in companies:
-        tasks.append(process_company(company))
+        tasks.append(process_company(company, mode=mode))
 
     results = await asyncio.gather(*tasks, return_exceptions=True)
 

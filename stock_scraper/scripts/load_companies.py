@@ -6,6 +6,7 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from stock_scraper.app.db.database import get_pool, close_pool
+from stock_scraper.app.scraper.screener_scraper import search_company, _normalize_company_name
 from stock_scraper.app.utils.logger import get_logger
 
 logger = get_logger("load_companies")
@@ -14,6 +15,24 @@ CSV_PATH = os.path.join(
     os.path.dirname(__file__), "..", "..", "attached_assets",
     "List-Of-All-Companies_1774497861468.csv"
 )
+
+
+def derive_screener_slug(name: str) -> str:
+    n = name.strip()
+    for suffix in [" Ltd", " Limited", " Pvt", " Private"]:
+        if n.endswith(suffix):
+            n = n[:-len(suffix)].strip()
+    slug = n.replace("&", "and").replace("'", "").replace(".", "").replace(",", "")
+    slug = slug.replace("(", "").replace(")", "").replace("/", "-")
+    parts = slug.split()
+    slug = "-".join(p for p in parts if p)
+    slug = slug.replace("--", "-").strip("-")
+    return slug
+
+
+def derive_screener_url(name: str) -> str:
+    slug = derive_screener_slug(name)
+    return f"https://www.screener.in/company/{slug}/consolidated/"
 
 
 async def load_companies_from_csv(csv_path: str = CSV_PATH):
@@ -42,14 +61,18 @@ async def load_companies_from_csv(csv_path: str = CSV_PATH):
         for i in range(0, len(companies), batch_size):
             batch = companies[i:i + batch_size]
 
-            records = [(name,) for name in batch]
+            records = [
+                (name, derive_screener_url(name))
+                for name in batch
+            ]
 
             try:
-                result = await conn.executemany(
+                await conn.executemany(
                     """
-                    INSERT INTO companies (name)
-                    VALUES ($1)
+                    INSERT INTO companies (name, screener_url)
+                    VALUES ($1, $2)
                     ON CONFLICT (name) DO UPDATE SET
+                        screener_url = COALESCE(companies.screener_url, EXCLUDED.screener_url),
                         updated_at = NOW()
                     """,
                     records,
@@ -61,12 +84,13 @@ async def load_companies_from_csv(csv_path: str = CSV_PATH):
                     try:
                         await conn.execute(
                             """
-                            INSERT INTO companies (name)
-                            VALUES ($1)
+                            INSERT INTO companies (name, screener_url)
+                            VALUES ($1, $2)
                             ON CONFLICT (name) DO UPDATE SET
+                                screener_url = COALESCE(companies.screener_url, EXCLUDED.screener_url),
                                 updated_at = NOW()
                             """,
-                            name,
+                            name, derive_screener_url(name),
                         )
                         inserted += 1
                     except Exception as e2:
