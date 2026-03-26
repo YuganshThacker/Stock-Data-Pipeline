@@ -102,15 +102,34 @@ async def list_companies(
     }
 
 
-@app.get("/companies/{company_id}")
-async def get_company_detail(company_id: int = Path(..., ge=1)):
+@app.get("/companies/by-id/{company_id}")
+async def get_company_by_id(company_id: int = Path(..., ge=1)):
+    return await _get_company_detail("id", company_id)
+
+
+@app.get("/companies/{symbol}")
+async def get_company_detail(symbol: str = Path(..., min_length=1)):
+    return await _get_company_detail("symbol", symbol)
+
+
+async def _get_company_detail(lookup_field: str, lookup_value):
     pool = await get_pool()
     async with pool.acquire() as conn:
-        company = await conn.fetchrow(
-            "SELECT * FROM companies WHERE id = $1", company_id
-        )
+        if lookup_field == "id":
+            company = await conn.fetchrow("SELECT * FROM companies WHERE id = $1", lookup_value)
+        else:
+            company = await conn.fetchrow(
+                "SELECT * FROM companies WHERE UPPER(symbol) = UPPER($1)", lookup_value
+            )
+            if not company:
+                company = await conn.fetchrow(
+                    "SELECT * FROM companies WHERE name ILIKE $1", f"%{lookup_value}%"
+                )
+
         if not company:
             raise HTTPException(status_code=404, detail="Company not found")
+
+        company_id = company["id"]
 
         fundamentals = await conn.fetchrow(
             "SELECT * FROM fundamentals WHERE company_id = $1", company_id
@@ -138,18 +157,25 @@ async def get_company_detail(company_id: int = Path(..., ge=1)):
     }
 
 
-@app.get("/companies/{company_id}/news")
+@app.get("/companies/{symbol}/news")
 async def get_company_news(
-    company_id: int = Path(..., ge=1),
+    symbol: str = Path(..., min_length=1),
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
 ):
     pool = await get_pool()
     async with pool.acquire() as conn:
-        company = await conn.fetchrow("SELECT id FROM companies WHERE id = $1", company_id)
+        company = await conn.fetchrow(
+            "SELECT id FROM companies WHERE UPPER(symbol) = UPPER($1)", symbol
+        )
+        if not company:
+            company = await conn.fetchrow(
+                "SELECT id FROM companies WHERE name ILIKE $1", f"%{symbol}%"
+            )
         if not company:
             raise HTTPException(status_code=404, detail="Company not found")
 
+        company_id = company["id"]
         offset = (page - 1) * per_page
         total = await conn.fetchval(
             "SELECT COUNT(*) FROM news WHERE company_id = $1", company_id

@@ -142,8 +142,67 @@ def clean_news(raw: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return cleaned_items
 
 
-def clean_all(parsed_data: Dict[str, Any]) -> Dict[str, Any]:
+def compute_data_quality(cleaned: Dict[str, Any]) -> Dict[str, Any]:
+    sections_present = 0
+    sections_total = 6
+    issues = []
+
+    fundamentals = cleaned.get("fundamentals", {})
+    if fundamentals and any(v is not None for k, v in fundamentals.items() if k not in ("raw_data",)):
+        sections_present += 1
+    else:
+        issues.append("missing_fundamentals")
+
+    financials = cleaned.get("financials", {})
+    if financials and any(financials.values()):
+        sections_present += 1
+    else:
+        issues.append("missing_financials")
+
+    ratios = cleaned.get("ratios", {})
+    if ratios and any(ratios.values()):
+        sections_present += 1
+    else:
+        issues.append("missing_ratios")
+
+    insights = cleaned.get("insights", {})
+    if insights.get("pros") or insights.get("cons") or insights.get("about"):
+        sections_present += 1
+    else:
+        issues.append("missing_insights")
+
+    shareholding = cleaned.get("shareholding", {})
+    if shareholding and any(shareholding.values()):
+        sections_present += 1
+    else:
+        issues.append("missing_shareholding")
+
+    news = cleaned.get("news", [])
+    if news:
+        sections_present += 1
+    else:
+        issues.append("missing_news")
+
+    completeness = round(sections_present / sections_total, 2)
+
+    if completeness >= 0.8:
+        grade = "high"
+    elif completeness >= 0.5:
+        grade = "medium"
+    else:
+        grade = "low"
+
     return {
+        "grade": grade,
+        "completeness": completeness,
+        "sections_present": sections_present,
+        "sections_total": sections_total,
+        "issues": issues,
+    }
+
+
+def clean_all(parsed_data: Dict[str, Any]) -> Dict[str, Any]:
+    cleaned = {
         "company_info": clean_company_info(parsed_data.get("company_info", {})),
         "fundamentals": clean_fundamentals(parsed_data.get("fundamentals", {})),
         "financials": clean_financials(parsed_data.get("financials", {})),
@@ -153,3 +212,5 @@ def clean_all(parsed_data: Dict[str, Any]) -> Dict[str, Any]:
         "shareholding": parsed_data.get("shareholding", {}),
         "scraped_at": datetime.now(timezone.utc).isoformat(),
     }
+    cleaned["data_quality"] = compute_data_quality(cleaned)
+    return cleaned

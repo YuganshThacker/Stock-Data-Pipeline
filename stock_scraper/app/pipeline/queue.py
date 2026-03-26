@@ -1,73 +1,95 @@
 import asyncio
 from typing import List, Dict, Any, Optional
-from stock_scraper.app.db.database import get_pool, get_all_companies
+from stock_scraper.app.db.database import get_pool
 from stock_scraper.app.utils.logger import get_logger
 
 logger = get_logger("queue")
 
 
-async def load_companies(
-    limit: Optional[int] = None,
-    offset: int = 0,
-    company_ids: Optional[List[int]] = None,
-) -> List[Dict[str, Any]]:
-    pool = await get_pool()
-    async with pool.acquire() as conn:
-        if company_ids:
+class CompanyQueue:
+    def __init__(self):
+        self._queue: asyncio.Queue = asyncio.Queue()
+        self._total_loaded = 0
+
+    async def load_all(
+        self,
+        limit: Optional[int] = None,
+        offset: int = 0,
+        company_ids: Optional[List[int]] = None,
+    ):
+        pool = await get_pool()
+        async with pool.acquire() as conn:
+            if company_ids:
+                rows = await conn.fetch(
+                    "SELECT id, name, screener_url, symbol FROM companies WHERE id = ANY($1) ORDER BY id",
+                    company_ids,
+                )
+            elif limit:
+                rows = await conn.fetch(
+                    "SELECT id, name, screener_url, symbol FROM companies ORDER BY id LIMIT $1 OFFSET $2",
+                    limit, offset,
+                )
+            else:
+                rows = await conn.fetch(
+                    "SELECT id, name, screener_url, symbol FROM companies ORDER BY id"
+                )
+
+        for row in rows:
+            await self._queue.put(dict(row))
+        self._total_loaded = len(rows)
+        logger.info(f"Loaded {self._total_loaded} companies into queue")
+
+    async def load_failed(self):
+        pool = await get_pool()
+        async with pool.acquire() as conn:
             rows = await conn.fetch(
-                "SELECT id, name, screener_url, symbol FROM companies WHERE id = ANY($1) ORDER BY id",
-                company_ids,
+                """
+                SELECT DISTINCT c.id, c.name, c.screener_url, c.symbol
+                FROM companies c
+                INNER JOIN scrape_logs sl ON c.id = sl.company_id
+                WHERE sl.status = 'failure'
+                AND c.id NOT IN (
+                    SELECT company_id FROM scrape_logs WHERE status = 'success'
+                )
+                ORDER BY c.id
+                """
             )
-        elif limit:
+        for row in rows:
+            await self._queue.put(dict(row))
+        self._total_loaded = len(rows)
+        logger.info(f"Loaded {self._total_loaded} failed companies into queue")
+
+    async def load_unscraped(self):
+        pool = await get_pool()
+        async with pool.acquire() as conn:
             rows = await conn.fetch(
-                "SELECT id, name, screener_url, symbol FROM companies ORDER BY id LIMIT $1 OFFSET $2",
-                limit, offset,
+                """
+                SELECT c.id, c.name, c.screener_url, c.symbol
+                FROM companies c
+                LEFT JOIN scrape_logs sl ON c.id = sl.company_id AND sl.status = 'success'
+                WHERE sl.id IS NULL
+                ORDER BY c.id
+                """
             )
-        else:
-            rows = await conn.fetch(
-                "SELECT id, name, screener_url, symbol FROM companies ORDER BY id"
-            )
-    companies = [dict(r) for r in rows]
-    logger.info(f"Loaded {len(companies)} companies from database")
-    return companies
+        for row in rows:
+            await self._queue.put(dict(row))
+        self._total_loaded = len(rows)
+        logger.info(f"Loaded {self._total_loaded} unscraped companies into queue")
 
+    async def get_batch(self, batch_size: int) -> List[Dict[str, Any]]:
+        batch = []
+        for _ in range(batch_size):
+            if self._queue.empty():
+                break
+            batch.append(await self._queue.get())
+        return batch
 
-async def load_failed_companies() -> List[Dict[str, Any]]:
-    pool = await get_pool()
-    async with pool.acquire() as conn:
-        rows = await conn.fetch(
-            """
-            SELECT DISTINCT c.id, c.name, c.screener_url, c.symbol
-            FROM companies c
-            INNER JOIN scrape_logs sl ON c.id = sl.company_id
-            WHERE sl.status = 'failure'
-            AND c.id NOT IN (
-                SELECT company_id FROM scrape_logs WHERE status = 'success'
-            )
-            ORDER BY c.id
-            """
-        )
-    companies = [dict(r) for r in rows]
-    logger.info(f"Loaded {len(companies)} failed companies for retry")
-    return companies
+    def empty(self) -> bool:
+        return self._queue.empty()
 
+    def size(self) -> int:
+        return self._queue.qsize()
 
-async def load_unscraped_companies() -> List[Dict[str, Any]]:
-    pool = await get_pool()
-    async with pool.acquire() as conn:
-        rows = await conn.fetch(
-            """
-            SELECT c.id, c.name, c.screener_url, c.symbol
-            FROM companies c
-            LEFT JOIN scrape_logs sl ON c.id = sl.company_id AND sl.status = 'success'
-            WHERE sl.id IS NULL
-            ORDER BY c.id
-            """
-        )
-    companies = [dict(r) for r in rows]
-    logger.info(f"Loaded {len(companies)} unscraped companies")
-    return companies
-
-
-def chunk_list(lst: list, chunk_size: int) -> List[list]:
-    return [lst[i:i + chunk_size] for i in range(0, len(lst), chunk_size)]
+    @property
+    def total_loaded(self) -> int:
+        return self._total_loaded

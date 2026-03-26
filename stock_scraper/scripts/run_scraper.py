@@ -5,7 +5,10 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
-from stock_scraper.app.pipeline.scheduler import run_full_scrape, run_retry_failed, run_unscraped
+from stock_scraper.app.pipeline.scheduler import (
+    run_full_scrape, run_retry_failed, run_unscraped,
+    run_daily_prices, run_weekly_financials, run_monthly_full_refresh,
+)
 from stock_scraper.app.db.database import close_pool, get_pool
 from stock_scraper.app.utils.logger import get_logger
 from stock_scraper.app.config import settings
@@ -15,8 +18,12 @@ logger = get_logger("run_scraper")
 
 async def main():
     parser = argparse.ArgumentParser(description="Stock Scraper - Screener.in Data Pipeline")
-    parser.add_argument("--mode", choices=["full", "retry", "unscraped"], default="full",
-                        help="Scraping mode: full (all companies), retry (failed only), unscraped (not yet scraped)")
+    parser.add_argument(
+        "--mode",
+        choices=["full", "retry", "unscraped", "daily_prices", "weekly_financials", "monthly_full"],
+        default="full",
+        help="Scraping mode: full (all), retry (failed), unscraped, daily_prices, weekly_financials, monthly_full",
+    )
     parser.add_argument("--limit", type=int, default=None,
                         help="Maximum number of companies to scrape")
     parser.add_argument("--offset", type=int, default=0,
@@ -34,16 +41,17 @@ async def main():
             count = await conn.fetchval("SELECT COUNT(*) FROM companies")
             logger.info(f"Total companies in database: {count}")
 
-        if args.mode == "full":
-            result = await run_full_scrape(
-                limit=args.limit,
-                offset=args.offset,
-                batch_size=args.batch_size,
-            )
-        elif args.mode == "retry":
-            result = await run_retry_failed(batch_size=args.batch_size)
-        elif args.mode == "unscraped":
-            result = await run_unscraped(batch_size=args.batch_size)
+        mode_handlers = {
+            "full": lambda: run_full_scrape(limit=args.limit, offset=args.offset, batch_size=args.batch_size),
+            "retry": lambda: run_retry_failed(batch_size=args.batch_size),
+            "unscraped": lambda: run_unscraped(batch_size=args.batch_size),
+            "daily_prices": lambda: run_daily_prices(batch_size=args.batch_size),
+            "weekly_financials": lambda: run_weekly_financials(batch_size=args.batch_size),
+            "monthly_full": lambda: run_monthly_full_refresh(batch_size=args.batch_size),
+        }
+
+        handler = mode_handlers[args.mode]
+        result = await handler()
 
         if result:
             logger.info(f"Scraping completed: {result}")
