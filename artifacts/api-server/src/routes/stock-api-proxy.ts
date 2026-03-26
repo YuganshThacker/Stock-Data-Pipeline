@@ -4,7 +4,7 @@ const router: IRouter = Router();
 
 const STOCK_API_PORT = 8001;
 
-router.all("/stock-api/*", async (req: Request, res: Response) => {
+router.all("/stock-api/{*path}", async (req: Request, res: Response) => {
   try {
     const targetUrl = `http://127.0.0.1:${STOCK_API_PORT}${req.originalUrl}`;
     const headers: Record<string, string> = {};

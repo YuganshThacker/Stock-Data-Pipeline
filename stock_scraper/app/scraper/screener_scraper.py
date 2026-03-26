@@ -157,8 +157,19 @@ async def resolve_and_fetch(company_name: str, current_url: Optional[str] = None
         html = await fetch_company_page(current_url)
         if html:
             return html, current_url
+        if "/consolidated/" in current_url:
+            standalone_url = current_url.replace("/consolidated/", "/")
+            html = await fetch_company_page(standalone_url)
+            if html:
+                return html, standalone_url
 
     search_result = await search_company(company_name)
+    if not search_result:
+        short_name = _extract_short_search_term(company_name)
+        if short_name and short_name.lower() != _normalize_company_name(company_name):
+            logger.info(f"Retrying search with short term '{short_name}' for: {company_name}")
+            search_result = await search_company(short_name)
+
     if not search_result:
         logger.warning(f"No search results for: {company_name}")
         return None, None
@@ -170,6 +181,18 @@ async def resolve_and_fetch(company_name: str, current_url: Optional[str] = None
     full_url = f"{SCREENER_BASE}{url_path}"
     html = await fetch_company_page(full_url)
     return html, full_url
+
+
+def _extract_short_search_term(company_name: str) -> Optional[str]:
+    cleaned = _normalize_company_name(company_name)
+    words = cleaned.split()
+    stop_words = {"india", "the", "and", "of", "in", "for", "a", "an"}
+    significant = [w for w in words if w.lower() not in stop_words and len(w) > 1]
+    if not significant:
+        return None
+    if len(significant) == 1:
+        return significant[0]
+    return " ".join(significant[:2])
 
 
 def company_name_to_screener_url(name: str) -> str:
