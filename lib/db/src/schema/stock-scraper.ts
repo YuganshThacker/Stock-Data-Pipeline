@@ -1,28 +1,18 @@
 import { pgTable, serial, text, numeric, jsonb, timestamp, integer, uniqueIndex, index } from "drizzle-orm/pg-core";
 
-export const companies = pgTable("companies", {
+export const companyData = pgTable("company_data", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   symbol: text("symbol"),
   sector: text("sector"),
   industry: text("industry"),
   screenerUrl: text("screener_url"),
-  marketCap: text("market_cap"),
-  currentPrice: text("current_price"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
-}, (table) => [
-  uniqueIndex("companies_name_key").on(table.name),
-  index("idx_companies_symbol").on(table.symbol),
-  index("idx_companies_name").on(table.name),
-]);
 
-export const fundamentals = pgTable("fundamentals", {
-  id: serial("id").primaryKey(),
-  companyId: integer("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
   marketCap: numeric("market_cap"),
   currentPrice: numeric("current_price"),
   pe: numeric("pe"),
+  stockPe: numeric("stock_pe"),
+  industryPe: numeric("industry_pe"),
   pb: numeric("pb"),
   roce: numeric("roce"),
   roe: numeric("roe"),
@@ -34,70 +24,46 @@ export const fundamentals = pgTable("fundamentals", {
   faceValue: numeric("face_value"),
   bookValue: numeric("book_value"),
   highLow: text("high_low"),
-  stockPe: numeric("stock_pe"),
-  industryPe: numeric("industry_pe"),
   intrinsicValue: numeric("intrinsic_value"),
   pledgedPct: numeric("pledged_pct"),
-  changeInPromoterHolding: numeric("change_in_promoter_holding"),
-  rawData: jsonb("raw_data").default({}),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
-}, (table) => [
-  uniqueIndex("fundamentals_company_id_key").on(table.companyId),
-  index("idx_fundamentals_company_id").on(table.companyId),
-]);
+  promoterHolding: numeric("promoter_holding"),
+  opm: numeric("opm"),
 
-export const financials = pgTable("financials", {
-  id: serial("id").primaryKey(),
-  companyId: integer("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
+  about: text("about").default(""),
+  pros: text("pros").array().default([]),
+  cons: text("cons").array().default([]),
+
   profitLoss: jsonb("profit_loss").default({}),
   balanceSheet: jsonb("balance_sheet").default({}),
   cashFlow: jsonb("cash_flow").default({}),
-  quarterly: jsonb("quarterly").default({}),
+  quarterlyResults: jsonb("quarterly_results").default({}),
   shareholding: jsonb("shareholding").default({}),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
-}, (table) => [
-  uniqueIndex("financials_company_id_key").on(table.companyId),
-  index("idx_financials_company_id").on(table.companyId),
-]);
+  ratios: jsonb("ratios").default({}),
 
-export const ratios = pgTable("ratios", {
-  id: serial("id").primaryKey(),
-  companyId: integer("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
-  ratiosData: jsonb("ratios_data").default({}),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
-}, (table) => [
-  uniqueIndex("ratios_company_id_key").on(table.companyId),
-  index("idx_ratios_company_id").on(table.companyId),
-]);
+  news: jsonb("news").default([]),
 
-export const insights = pgTable("insights", {
-  id: serial("id").primaryKey(),
-  companyId: integer("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
-  pros: text("pros").array().default([]),
-  cons: text("cons").array().default([]),
-  about: text("about").default(""),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
-}, (table) => [
-  uniqueIndex("insights_company_id_key").on(table.companyId),
-  index("idx_insights_company_id").on(table.companyId),
-]);
+  ragContent: text("rag_content").default(""),
 
-export const news = pgTable("news", {
-  id: serial("id").primaryKey(),
-  companyId: integer("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
-  title: text("title").notNull(),
-  newsDate: text("news_date"),
-  source: text("source"),
-  link: text("link"),
+  dataQuality: text("data_quality").default("pending"),
+  dataCompleteness: numeric("data_completeness").default("0"),
+  scrapedAt: timestamp("scraped_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 }, (table) => [
-  uniqueIndex("news_company_id_title_key").on(table.companyId, table.title),
-  index("idx_news_company_id").on(table.companyId),
+  uniqueIndex("company_data_name_key").on(table.name),
+  index("idx_cd_symbol").on(table.symbol),
+  index("idx_cd_name").on(table.name),
+  index("idx_cd_sector").on(table.sector),
+  index("idx_cd_market_cap").on(table.marketCap),
+  index("idx_cd_pe").on(table.pe),
+  index("idx_cd_roe").on(table.roe),
+  index("idx_cd_roce").on(table.roce),
+  index("idx_cd_data_quality").on(table.dataQuality),
 ]);
 
 export const scrapeLogs = pgTable("scrape_logs", {
   id: serial("id").primaryKey(),
-  companyId: integer("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
+  companyId: integer("company_id").notNull(),
   status: text("status").notNull(),
   errorMessage: text("error_message"),
   durationMs: integer("duration_ms"),

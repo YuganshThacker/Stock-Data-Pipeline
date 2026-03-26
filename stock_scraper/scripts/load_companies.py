@@ -65,10 +65,10 @@ async def load_companies_from_csv(csv_path: str = CSV_PATH):
             try:
                 await conn.executemany(
                     """
-                    INSERT INTO companies (name, screener_url)
+                    INSERT INTO company_data (name, screener_url)
                     VALUES ($1, $2)
                     ON CONFLICT (name) DO UPDATE SET
-                        screener_url = COALESCE(companies.screener_url, EXCLUDED.screener_url),
+                        screener_url = COALESCE(company_data.screener_url, EXCLUDED.screener_url),
                         updated_at = NOW()
                     """,
                     records,
@@ -80,10 +80,10 @@ async def load_companies_from_csv(csv_path: str = CSV_PATH):
                     try:
                         await conn.execute(
                             """
-                            INSERT INTO companies (name, screener_url)
+                            INSERT INTO company_data (name, screener_url)
                             VALUES ($1, $2)
                             ON CONFLICT (name) DO UPDATE SET
-                                screener_url = COALESCE(companies.screener_url, EXCLUDED.screener_url),
+                                screener_url = COALESCE(company_data.screener_url, EXCLUDED.screener_url),
                                 updated_at = NOW()
                             """,
                             name, derive_screener_url(name),

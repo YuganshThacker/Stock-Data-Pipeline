@@ -34,7 +34,7 @@ async def main():
     try:
         pool = await get_pool()
         async with pool.acquire() as conn:
-            count = await conn.fetchval("SELECT COUNT(*) FROM companies")
+            count = await conn.fetchval("SELECT COUNT(*) FROM company_data")
             logger.info(f"Total companies in database: {count}")
 
         mode_handlers = {

@@ -21,17 +21,17 @@ class CompanyQueue:
         async with pool.acquire() as conn:
             if company_ids:
                 rows = await conn.fetch(
-                    "SELECT id, name, screener_url, symbol FROM companies WHERE id = ANY($1) ORDER BY id",
+                    "SELECT id, name, screener_url, symbol FROM company_data WHERE id = ANY($1) ORDER BY id",
                     company_ids,
                 )
             elif limit:
                 rows = await conn.fetch(
-                    "SELECT id, name, screener_url, symbol FROM companies ORDER BY id LIMIT $1 OFFSET $2",
+                    "SELECT id, name, screener_url, symbol FROM company_data ORDER BY id LIMIT $1 OFFSET $2",
                     limit, offset,
                 )
             else:
                 rows = await conn.fetch(
-                    "SELECT id, name, screener_url, symbol FROM companies ORDER BY id"
+                    "SELECT id, name, screener_url, symbol FROM company_data ORDER BY id"
                 )
 
         for row in rows:
@@ -44,14 +44,14 @@ class CompanyQueue:
         async with pool.acquire() as conn:
             rows = await conn.fetch(
                 """
-                SELECT DISTINCT c.id, c.name, c.screener_url, c.symbol
-                FROM companies c
-                INNER JOIN scrape_logs sl ON c.id = sl.company_id
+                SELECT DISTINCT cd.id, cd.name, cd.screener_url, cd.symbol
+                FROM company_data cd
+                INNER JOIN scrape_logs sl ON cd.id = sl.company_id
                 WHERE sl.status = 'failure'
-                AND c.id NOT IN (
+                AND cd.id NOT IN (
                     SELECT company_id FROM scrape_logs WHERE status = 'success'
                 )
-                ORDER BY c.id
+                ORDER BY cd.id
                 """
             )
         for row in rows:
@@ -64,11 +64,10 @@ class CompanyQueue:
         async with pool.acquire() as conn:
             rows = await conn.fetch(
                 """
-                SELECT c.id, c.name, c.screener_url, c.symbol
-                FROM companies c
-                LEFT JOIN scrape_logs sl ON c.id = sl.company_id AND sl.status = 'success'
-                WHERE sl.id IS NULL
-                ORDER BY c.id
+                SELECT cd.id, cd.name, cd.screener_url, cd.symbol
+                FROM company_data cd
+                WHERE cd.scraped_at IS NULL
+                ORDER BY cd.id
                 """
             )
         for row in rows:

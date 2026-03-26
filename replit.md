@@ -108,7 +108,7 @@ stock_scraper/
 ├── app/
 │   ├── api/main.py          # FastAPI query API (port 8001, root_path=/stock-api)
 │   ├── config.py             # Settings (pydantic-settings, reads .env + env vars)
-│   ├── db/database.py        # asyncpg connection pool, UPSERT operations for all 7 tables
+│   ├── db/database.py        # asyncpg connection pool, unified UPSERT into company_data table + RAG text builder
 │   ├── pipeline/
 │   │   ├── worker.py          # Per-company scrape logic (resolve URL → fetch → parse → clean → store)
 │   │   ├── scheduler.py       # Batch orchestration (full/retry/unscraped modes)
@@ -128,12 +128,14 @@ stock_scraper/
 
 ### Database Tables (PostgreSQL)
 
-- `companies` — 4,492 NSE/BSE companies (name, symbol, sector, industry, market_cap, screener_url)
-- `fundamentals` — PE, PB, ROCE, ROE, market cap, dividend yield, etc.
-- `financials` — P&L, balance sheet, cash flow, shareholding (JSONB)
-- `ratios` — Historical ratio data (JSONB)
-- `insights` — Pros, cons, company about text
-- `news` — Company news articles
+- `company_data` — Single unified RAG-ready table for all 4,492 NSE/BSE companies. Contains:
+  - Identity: name, symbol, sector, industry, screener_url
+  - Fundamentals: market_cap, current_price, pe, stock_pe, industry_pe, pb, roce, roe, debt_to_equity, eps, dividend_yield, sales_growth, profit_growth, book_value, face_value, opm, promoter_holding, pledged_pct, intrinsic_value
+  - Insights: about (text), pros (text[]), cons (text[])
+  - Financials (JSONB): profit_loss, balance_sheet, cash_flow, quarterly_results, shareholding, ratios
+  - News (JSONB array): title, date, source, link
+  - RAG: rag_content (full-text searchable combined text), GIN index for fast search
+  - Quality: data_quality (high/medium/low/pending), data_completeness (0-1), scraped_at
 - `scrape_logs` — Scrape attempt tracking (status, duration, errors)
 
 ### Running the Scraper
@@ -162,11 +164,13 @@ python3 -m stock_scraper.app.api.main
 ### API Endpoints
 
 - `GET /stock-api/health` — Health check
-- `GET /stock-api/companies` — List companies (search, sector filter, pagination)
-- `GET /stock-api/companies/{id}` — Full company detail with fundamentals, financials, ratios, insights, news
-- `GET /stock-api/companies/{id}/news` — Company news (paginated)
-- `GET /stock-api/scrape-status` — Scraping progress summary
-- `GET /stock-api/sectors` — List sectors with company counts
+- `GET /stock-api/companies` — List companies (search, sector filter, pagination; includes pe, roe, roce)
+- `GET /stock-api/companies/{symbol}` — Full company detail (all data from unified table)
+- `GET /stock-api/companies/by-id/{id}` — Company detail by ID
+- `GET /stock-api/companies/{symbol}/news` — Company news
+- `GET /stock-api/scrape-status` — Scraping progress (total, scraped, pending, quality distribution)
+- `GET /stock-api/sectors` — Sectors with avg PE, ROE, ROCE
+- `GET /stock-api/search?q=...` — Full-text RAG search across all company data
 
 ### Key Design Decisions
 
