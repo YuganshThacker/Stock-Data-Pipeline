@@ -1,0 +1,41 @@
+{"timestamp": "2026-03-26T04:46:42.353909+00:00", "level": "INFO", "logger": "run_scraper", "message": "Starting scraper: mode=full, limit=None, offset=0, batch_size=20"}
+{"timestamp": "2026-03-26T04:46:42.394017+00:00", "level": "INFO", "logger": "database", "message": "Database connection pool created"}
+{"timestamp": "2026-03-26T04:46:42.396890+00:00", "level": "INFO", "logger": "run_scraper", "message": "Total companies in database: 4492"}
+{"timestamp": "2026-03-26T04:46:42.416249+00:00", "level": "INFO", "logger": "queue", "message": "Loaded 4492 companies into queue"}
+{"timestamp": "2026-03-26T04:46:42.416639+00:00", "level": "INFO", "logger": "scheduler", "message": "Starting full scrape of 4492 companies"}
+{"timestamp": "2026-03-26T04:46:42.416809+00:00", "level": "INFO", "logger": "scheduler", "message": "Processing batch 1 (20 companies, mode=full)"}
+{"timestamp": "2026-03-26T04:46:42.416962+00:00", "level": "INFO", "logger": "worker", "message": "Starting scrape batch: 20 companies, mode=full, concurrency=5"}
+{"timestamp": "2026-03-26T04:46:43.504694+00:00", "level": "INFO", "logger": "worker", "message": "Successfully scraped Medinova Diagnostic Services Ltd (mode=full)", "company_id": 1, "company_name": "Medinova Diagnostic Services Ltd", "duration_ms": 1081, "status": "success"}
+{"timestamp": "2026-03-26T04:46:43.866104+00:00", "level": "INFO", "logger": "worker", "message": "Successfully scraped R J Bio-Tech Ltd (mode=full)", "company_id": 2, "company_name": "R J Bio-Tech Ltd", "duration_ms": 1308, "status": "success"}
+{"timestamp": "2026-03-26T04:46:44.370965+00:00", "level": "INFO", "logger": "worker", "message": "Successfully scraped Swadeshi Polytex Ltd (mode=full)", "company_id": 3, "company_name": "Swadeshi Polytex Ltd", "duration_ms": 1811, "status": "success"}
+{"timestamp": "2026-03-26T04:46:44.592464+00:00", "level": "WARNING", "logger": "scraper", "message": "Page not found (404) for https://www.screener.in/company/Sterling-Guaranty-Finance/consolidated/"}
+{"timestamp": "2026-03-26T04:46:44.921718+00:00", "level": "WARNING", "logger": "scraper", "message": "Page not found (404) for https://www.screener.in/company/SBEC-Systems-India/consolidated/"}
+{"timestamp": "2026-03-26T04:46:45.371703+00:00", "level": "WARNING", "logger": "scraper", "message": "Page not found (404) for https://www.screener.in/company/Triveni-Glass/consolidated/"}
+{"timestamp": "2026-03-26T04:46:45.882999+00:00", "level": "WARNING", "logger": "scraper", "message": "Page not found (404) for https://www.screener.in/company/Reliance-Home-Finance/consolidated/"}
+{"timestamp": "2026-03-26T04:46:46.321470+00:00", "level": "WARNING", "logger": "scraper", "message": "Page not found (404) for https://www.screener.in/company/Modern-Steels/consolidated/"}
+{"timestamp": "2026-03-26T04:46:46.718829+00:00", "level": "WARNING", "logger": "scraper", "message": "No search results for: Sterling Guaranty & Finance Ltd"}
+{"timestamp": "2026-03-26T04:46:46.755457+00:00", "level": "WARNING", "logger": "worker", "message": "Company not found on Screener.in: Sterling Guaranty & Finance Ltd"}
+{"timestamp": "2026-03-26T04:46:48.981995+00:00", "level": "WARNING", "logger": "scraper", "message": "Page not found (404) for https://www.screener.in/company/Krishna-Filament-Industries/consolidated/"}
+{"timestamp": "2026-03-26T04:46:49.753964+00:00", "level": "INFO", "logger": "worker", "message": "Successfully scraped SBEC Systems (India) Ltd (mode=full)", "company_id": 5, "company_name": "SBEC Systems (India) Ltd", "duration_ms": 7185, "status": "success"}
+{"timestamp": "2026-03-26T04:46:50.161201+00:00", "level": "INFO", "logger": "worker", "message": "Successfully scraped Triveni Glass Ltd (mode=full)", "company_id": 6, "company_name": "Triveni Glass Ltd", "duration_ms": 6652, "status": "success"}
+{"timestamp": "2026-03-26T04:46:50.713664+00:00", "level": "INFO", "logger": "worker", "message": "Successfully scraped Reliance Home Finance Ltd (mode=full)", "company_id": 7, "company_name": "Reliance Home Finance Ltd", "duration_ms": 6843, "status": "success"}
+{"timestamp": "2026-03-26T04:46:51.256991+00:00", "level": "INFO", "logger": "worker", "message": "Successfully scraped Modern Steels Ltd (mode=full)", "company_id": 8, "company_name": "Modern Steels Ltd", "duration_ms": 6881, "status": "success"}
+{"timestamp": "2026-03-26T04:46:52.075069+00:00", "level": "INFO", "logger": "worker", "message": "Successfully scraped TRF Ltd (mode=full)", "company_id": 10, "company_name": "TRF Ltd", "duration_ms": 2315, "status": "success"}
+{"timestamp": "2026-03-26T04:46:52.188380+00:00", "level": "WARNING", "logger": "scraper", "message": "Page not found (404) for https://www.screener.in/company/Servoteach-Industries/consolidated/"}
+{"timestamp": "2026-03-26T04:46:52.601462+00:00", "level": "WARNING", "logger": "scraper", "message": "Page not found (404) for https://www.screener.in/company/Yaari-Digital-Integrated-Services/consolidated/"}
+{"timestamp": "2026-03-26T04:46:53.102321+00:00", "level": "WARNING", "logger": "scraper", "message": "Page not found (404) for https://www.screener.in/company/Basilic-Fly-Studio/consolidated/"}
+{"timestamp": "2026-03-26T04:46:53.808284+00:00", "level": "INFO", "logger": "worker", "message": "Successfully scraped Krishna Filament Industries Ltd (mode=full)", "company_id": 9, "company_name": "Krishna Filament Industries Ltd", "duration_ms": 7047, "status": "success"}
+{"timestamp": "2026-03-26T04:46:53.943550+00:00", "level": "WARNING", "logger": "scraper", "message": "Page not found (404) for https://www.screener.in/company/Ksolves-India/consolidated/"}
+{"timestamp": "2026-03-26T04:46:54.395070+00:00", "level": "WARNING", "logger": "scraper", "message": "No search results for: Servoteach Industries Ltd"}
+{"timestamp": "2026-03-26T04:46:54.400308+00:00", "level": "WARNING", "logger": "worker", "message": "Company not found on Screener.in: Servoteach Industries Ltd"}
+{"timestamp": "2026-03-26T04:46:54.882864+00:00", "level": "WARNING", "logger": "scraper", "message": "No search results for: Yaari Digital Integrated Services Ltd"}
+{"timestamp": "2026-03-26T04:46:54.890658+00:00", "level": "WARNING", "logger": "worker", "message": "Company not found on Screener.in: Yaari Digital Integrated Services Ltd"}
+{"timestamp": "2026-03-26T04:46:55.832580+00:00", "level": "WARNING", "logger": "scraper", "message": "Page not found (404) for https://www.screener.in/company/Varanium-Cloud/consolidated/"}
+{"timestamp": "2026-03-26T04:46:56.755604+00:00", "level": "WARNING", "logger": "scraper", "message": "Page not found (404) for https://www.screener.in/company/Life-Insurance-Corporation-of-India/consolidated/"}
+{"timestamp": "2026-03-26T04:46:57.232833+00:00", "level": "WARNING", "logger": "scraper", "message": "Page not found (404) for https://www.screener.in/company/Nestle-India/consolidated/"}
+{"timestamp": "2026-03-26T04:46:57.950421+00:00", "level": "INFO", "logger": "worker", "message": "Successfully scraped Basilic Fly Studio Ltd (mode=full)", "company_id": 13, "company_name": "Basilic Fly Studio Ltd", "duration_ms": 6688, "status": "success"}
+{"timestamp": "2026-03-26T04:46:58.785822+00:00", "level": "INFO", "logger": "worker", "message": "Successfully scraped Ksolves India Ltd (mode=full)", "company_id": 14, "company_name": "Ksolves India Ltd", "duration_ms": 6706, "status": "success"}
+{"timestamp": "2026-03-26T04:46:59.811535+00:00", "level": "WARNING", "logger": "scraper", "message": "Page not found (404) for https://www.screener.in/company/Gayatri-Sugars/consolidated/"}
+{"timestamp": "2026-03-26T04:47:00.577440+00:00", "level": "INFO", "logger": "worker", "message": "Successfully scraped Varanium Cloud Ltd (mode=full)", "company_id": 15, "company_name": "Varanium Cloud Ltd", "duration_ms": 6765, "status": "success"}
+{"timestamp": "2026-03-26T04:47:00.801289+00:00", "level": "WARNING", "logger": "scraper", "message": "Page not found (404) for https://www.screener.in/company/Abirami-Financial-Services-India/consolidated/"}
+{"timestamp": "2026-03-26T04:47:01.533186+00:00", "level": "INFO", "logger": "worker", "message": "Successfully scraped Life Insurance Corporation of India (mode=full)", "company_id": 16, "company_name": "Life Insurance Corporation of India", "duration_ms": 7127, "status": "success"}
