@@ -18,7 +18,7 @@
 - 📊 Scrape financial data from multiple sources (Screener, NSE, BSE)
 - 🧹 Clean and normalize raw datasets
 - 🗄️ Store structured data in PostgreSQL
-- ⚡ Power downstream use cases like:
+- ⚡ Power downstream use cases:
   - Quant research
   - IPO analysis
   - AI/ML models
@@ -59,6 +59,7 @@ APIs / ML / Analytics
 ## ⚡ Quickstart
 
 ### 1. Clone the repo
+
 ```bash
 git clone https://github.com/YuganshThacker/Stock-Data-Pipeline.git
 cd Stock-Data-Pipeline
