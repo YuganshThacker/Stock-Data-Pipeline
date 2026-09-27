@@ -1,117 +1,109 @@
-# Stock-Data-Pipeline
+# Stock Data Pipeline
 
-Production-grade pipeline to collect, clean, and structure Indian stock market data (NSE & BSE) for analytics, research, and AI applications.
+Production-oriented financial data infrastructure for collecting, cleaning, and structuring Indian market data for analytics, machine learning, and AI applications.
 
-## Overview
+## Problem
 
-Stock Data Pipeline is a scalable data infrastructure designed to:
+Financial applications often fail before the model is involved: source data is inconsistent, schemas change, historical data is fragmented, and downstream systems need the same normalized entities repeatedly.
 
-- Scrape financial data from multiple sources (Screener, NSE, BSE)
-- Clean and normalize raw datasets
-- Store structured data in PostgreSQL
-- Power downstream use cases: quant research, IPO analysis, AI/ML models, financial dashboards
-
-## Features
-
-- Automated data collection (NSE + BSE companies)
-- Fundamental data engine (P&L, Balance Sheet, Ratios)
-- Structured PostgreSQL storage
-- Scalable pipeline architecture
-- Modular & extensible design
+This project focuses on building a reusable data layer between external market sources and downstream analytics or AI systems.
 
 ## Architecture
-```
-Data Sources (Screener, NSE, BSE)
-        ↓
-Scraping Engine
-        ↓
-Data Cleaning & Processing
-        ↓
-PostgreSQL Database
-        ↓
-APIs / ML / Analytics
-```
 
-## Quickstart
-
-**1. Clone the repo**
-```bash
-git clone https://github.com/YuganshThacker/Stock-Data-Pipeline.git
-cd Stock-Data-Pipeline
+```
+NSE / BSE / Financial Sources
+            ↓
+      Collection Layer
+            ↓
+   Cleaning & Normalization
+            ↓
+       PostgreSQL
+            ↓
+ ┌──────────┼──────────┐
+ ↓          ↓          ↓
+Analytics   ML / AI    APIs
 ```
 
-**2. Setup environment**
-```bash
-python -m venv venv
-source venv/bin/activate   # Mac/Linux
-venv\Scripts\activate      # Windows
+## Current Capabilities
 
-pip install -r requirements.txt
-```
+- automated collection of Indian company and financial data
+- normalization into structured relational tables
+- PostgreSQL persistence
+- processing with Python and Pandas
+- modular collectors that can be extended with additional sources
+- data shaped for downstream ML, analytics, and AI applications
 
-**3. Configure environment variables**
+## Financial Data
 
-Create a `.env` file:
-```env
-DATABASE_URL=postgresql://user:password@localhost:5432/stockdb
-```
+The current schema is centered around:
 
-**4. Run the pipeline**
-```bash
-python main.py
-```
-
-## Data Coverage
-
-**Available now:**
-- NSE & BSE listed companies
-- Financial statements: Balance Sheet, Profit & Loss, Cash Flow
-- Key ratios: PE, ROE, ROCE, Debt/Equity
-
-**Coming soon:**
-- News data
-- Shareholding patterns
-- Insider trading data
-
-## Database Schema
-
-| Table | Description |
-|---|---|
-| `companies` | Company master data |
-| `financials` | P&L, Balance Sheet, Cash Flow |
-| `ratios` | Key financial ratios |
-| `prices` | Historical price data |
-| `news` | News data *(planned)* |
-
-## Use Cases
-
-- Quantitative trading strategies
-- Training financial ML models
-- IPO analysis platforms
-- Financial dashboards
-- Institutional-grade data infrastructure
+- company master data
+- financial statements
+- financial ratios
+- historical prices
+- extensible data-source integrations
 
 ## Tech Stack
 
-- **Language:** Python
-- **Database:** PostgreSQL
-- **Scraping:** BeautifulSoup, Requests, Playwright
-- **Data Processing:** Pandas
+- **Python**
+- **PostgreSQL**
+- **Pandas**
+- **Requests / BeautifulSoup**
+- **Playwright**
+
+## Quickstart
+
+```bash
+git clone https://github.com/YuganshThacker/Stock-Data-Pipeline.git
+cd Stock-Data-Pipeline
+
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+# configure your own PostgreSQL connection
+export DATABASE_URL="postgresql://user:password@localhost:5432/stockdb"
+
+python main.py
+```
+
+## Design Priorities
+
+### Modular collectors
+
+Source-specific collection logic is separated from downstream cleaning and persistence so new vendors or exchanges can be added without redesigning the whole pipeline.
+
+### Structured storage
+
+PostgreSQL provides a stable relational layer for analytics, feature generation, and API consumers.
+
+### AI-ready downstream use
+
+A normalized financial dataset can support:
+
+- ML feature engineering
+- financial research systems
+- retrieval pipelines
+- market analytics
+- dashboarding
+- model evaluation
 
 ## Roadmap
 
-- [ ] Real-time data ingestion
-- [ ] API layer (FastAPI)
-- [ ] Data versioning
-- [ ] ML-ready feature store
-- [ ] Distributed scraping
+- FastAPI access layer
+- stronger data versioning
+- ML feature-store integration
+- distributed collection
+- additional research/news sources
 
-## Contributing
+## Engineering Takeaway
 
-Contributions are welcome!
+This repository represents the data-engineering side of AI systems:
 
-`fork → clone → branch → commit → PR`
+**collect → normalize → persist → expose → build intelligence on top**
+
+For AI products, the quality and reliability of this layer often matter as much as the model itself.
 
 ## License
 
-MIT License © 2026 Yugansh Thacker
+MIT
