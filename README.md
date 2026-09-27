@@ -1,16 +1,13 @@
 # Stock Data Pipeline
 
-Production-oriented financial data infrastructure for collecting, cleaning, and structuring Indian market data for analytics, machine learning, and AI applications.
+Production-oriented financial data infrastructure for collecting, cleaning, structuring, and exposing Indian market data for analytics, machine learning, and AI applications.
 
-## Problem
+## Why This Project Exists
 
-Financial applications often fail before the model is involved: source data is inconsistent, schemas change, historical data is fragmented, and downstream systems need the same normalized entities repeatedly.
-
-This project focuses on building a reusable data layer between external market sources and downstream analytics or AI systems.
+Financial AI systems depend on reliable data: source formats change, historical data is fragmented, and downstream systems need stable schemas. This project focuses on the data layer between external sources and AI or analytics applications.
 
 ## Architecture
 
-```
 NSE / BSE / Financial Sources
             ↓
       Collection Layer
@@ -22,88 +19,65 @@ NSE / BSE / Financial Sources
  ┌──────────┼──────────┐
  ↓          ↓          ↓
 Analytics   ML / AI    APIs
-```
 
 ## Current Capabilities
 
 - automated collection of Indian company and financial data
-- normalization into structured relational tables
+- normalization into structured relational data
 - PostgreSQL persistence
-- processing with Python and Pandas
-- modular collectors that can be extended with additional sources
-- data shaped for downstream ML, analytics, and AI applications
+- Python/Pandas processing
+- modular source-specific collectors
+- data shaped for analytics, ML, retrieval, and AI systems
+- a read-only MCP server exposing safe financial-data tools to LLM clients
 
-## Financial Data
+## MCP Integration
 
-The current schema is centered around:
+The mcp/ directory contains a working Model Context Protocol server built around the financial data model.
 
-- company master data
-- financial statements
-- financial ratios
-- historical prices
-- extensible data-source integrations
+LLM Client → MCP → Typed, bounded tools → PostgreSQL / demo fixture → Structured financial facts
+
+The MCP surface includes company search, selected fundamentals, data-health information, a schema resource, and a research prompt. Arbitrary SQL is deliberately not exposed.
+
+See mcp/README.md.
+
+## Data Layer
+
+The Python scraper uses PostgreSQL-compatible storage and environment-based configuration. The schema includes company data, financials, fundamentals, ratios, insights, news, and scrape logs.
 
 ## Tech Stack
 
-- **Python**
-- **PostgreSQL**
-- **Pandas**
-- **Requests / BeautifulSoup**
-- **Playwright**
+- Python
+- PostgreSQL
+- Pandas
+- Requests / BeautifulSoup
+- Playwright
+- asyncpg
+- MCP Python SDK
 
-## Quickstart
+## Run the Python Scraper
 
-```bash
 git clone https://github.com/YuganshThacker/Stock-Data-Pipeline.git
 cd Stock-Data-Pipeline
+python -m venv .venv
+source .venv/bin/activate
+pip install -r stock_scraper/requirements.txt
+cp stock_scraper/.env.example stock_scraper/.env
+# configure DATABASE_URL and other local settings
+python -m stock_scraper
 
+## Run the MCP Server
+
+cd mcp
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+# Demo mode: no private database required
+python server.py
 
-# configure your own PostgreSQL connection
-export DATABASE_URL="postgresql://user:password@localhost:5432/stockdb"
+For real data, set DATABASE_URL before starting the server.
 
-python main.py
-```
+## Engineering Priorities
 
-## Design Priorities
+collect → normalize → persist → expose → build intelligence
 
-### Modular collectors
-
-Source-specific collection logic is separated from downstream cleaning and persistence so new vendors or exchanges can be added without redesigning the whole pipeline.
-
-### Structured storage
-
-PostgreSQL provides a stable relational layer for analytics, feature generation, and API consumers.
-
-### AI-ready downstream use
-
-A normalized financial dataset can support:
-
-- ML feature engineering
-- financial research systems
-- retrieval pipelines
-- market analytics
-- dashboarding
-- model evaluation
-
-## Roadmap
-
-- FastAPI access layer
-- stronger data versioning
-- ML feature-store integration
-- distributed collection
-- additional research/news sources
-
-## Engineering Takeaway
-
-This repository represents the data-engineering side of AI systems:
-
-**collect → normalize → persist → expose → build intelligence on top**
-
-For AI products, the quality and reliability of this layer often matter as much as the model itself.
-
-## License
-
-MIT
+The repository intentionally separates source ingestion from downstream consumers. The MCP layer is a thin, read-only capability boundary rather than a second copy of the data pipeline.
